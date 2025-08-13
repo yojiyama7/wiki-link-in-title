@@ -181,10 +181,6 @@ class Wiki:
 
     while nodes_to_check:
       current_id = nodes_to_check.pop(0)
-      if current_id in processed_ids: continue
-      processed_ids.add(current_id)
-
-      if current_id not in self.notes: continue
 
       note = self.notes[current_id]
       original_title = note['title']
@@ -193,20 +189,17 @@ class Wiki:
 
       updated_title = original_title.replace(old_text, new_text)
 
-      old_uname_of_linked_note = note['uname']
-      new_uname_of_linked_note = self._parse_uname(updated_title)
-      
+      original_uname = note['uname']
+      new_uname = self._parse_uname(updated_title)
+    
       note['title'] = updated_title
-      note['uname'] = new_uname_of_linked_note
+      note['uname'] = new_uname
 
-      if old_uname_of_linked_note in self.uname_to_id: del self.uname_to_id[old_uname_of_linked_note]
-      self.uname_to_id[new_uname_of_linked_note] = current_id
+      if original_uname in self.uname_to_id: del self.uname_to_id[original_uname]
+      self.uname_to_id[new_uname] = current_id
       
-      if old_uname_of_linked_note != new_uname_of_linked_note:
-        backlink_ids_to_recheck = self._calculate_backlinks(old_uname_of_linked_note)
-        for an_id in backlink_ids_to_recheck:
-          if an_id not in processed_ids:
-            nodes_to_check.insert(0, an_id)
+      if original_uname != new_uname:
+        self._propagate_change_recursively(current_id, f"[[{original_uname}]]", f"[[{new_uname}]]")
 
   def link(self, note_id: int) -> str:
     if note_id not in self.notes: return f"エラー: ID '{note_id}' のノートは存在しません。"
