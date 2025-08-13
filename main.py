@@ -2,8 +2,22 @@ import re
 import shlex
 import json
 import os
+import unicodedata  # 表示幅の計算に必要
 from prompt_toolkit import PromptSession
 from prompt_toolkit.history import InMemoryHistory
+
+def get_display_width(text: str) -> int:
+    """
+    文字列の表示幅を計算する。全角文字は2、半角文字は1としてカウント。
+    """
+    width = 0
+    for char in text:
+        # 'F' (Fullwidth), 'W' (Wide), 'A' (Ambiguous) を全角文字(幅2)として扱う
+        if unicodedata.east_asian_width(char) in ('F', 'W', 'A'):
+            width += 2
+        else:
+            width += 1
+    return width
 
 class Wiki:
   """
@@ -38,10 +52,8 @@ class Wiki:
       with open(self.filepath, 'r', encoding='utf-8') as f:
         data = json.load(f)
         self._next_id = data.get('_next_id', 1)
-        # JSONのキーは文字列なので、整数に変換してロード
         loaded_notes = {int(k): v for k, v in data.get('notes', {}).items()}
         self.notes = loaded_notes
-        # unameからIDへのマッピングを再構築
         self.uname_to_id = {note['uname']: note_id for note_id, note in self.notes.items()}
     except (IOError, json.JSONDecodeError) as e:
       print(f"エラー: データの読み込みに失敗しました - {e}")
@@ -71,19 +83,39 @@ class Wiki:
     return backlink_ids
 
   def ls(self) -> str:
-    """ノートの一覧を整形して返す"""
+    """ノートの一覧を、表示幅を考慮して整形して返す"""
     if not self.notes:
       return "ノートはありません。"
+    
     headers = ["ID", "Unique Name (uname)", "Title"]
-    col_widths = [len(h) for h in headers]
+    
+    # 各列の最大「表示幅」を計算
+    col_widths = [get_display_width(h) for h in headers]
     for note in self.notes.values():
-      col_widths[0] = max(col_widths[0], len(str(note['id'])))
-      col_widths[1] = max(col_widths[1], len(note['uname']))
-      col_widths[2] = max(col_widths[2], len(note['title']))
-    header_line = f"{headers[0]:<{col_widths[0]}} | {headers[1]:<{col_widths[1]}} | {headers[2]}"
+      col_widths[0] = max(col_widths[0], get_display_width(str(note['id'])))
+      col_widths[1] = max(col_widths[1], get_display_width(note['uname']))
+      col_widths[2] = max(col_widths[2], get_display_width(note['title']))
+      
+    # 各行をフォーマットする内部関数
+    def format_row(items, widths):
+      formatted_items = []
+      for item, width in zip(items, widths):
+        # 表示幅を元に、必要な半角スペースの数を計算してパディング
+        padding_count = width - get_display_width(item)
+        padding = " " * padding_count
+        formatted_items.append(item + padding)
+      return " | ".join(formatted_items)
+
+    header_line = format_row(headers, col_widths)
     separator = "-" * len(header_line)
-    lines = [f"{note['id']:<{col_widths[0]}} | {note['uname']:<{col_widths[1]}} | {note['title']}" for note in sorted(self.notes.values(), key=lambda x: x['id'])]
+    
+    lines = []
+    for note in sorted(self.notes.values(), key=lambda x: x['id']):
+      row_items = [str(note['id']), note['uname'], note['title']]
+      lines.append(format_row(row_items, col_widths))
+      
     return "\n".join([header_line, separator] + lines)
+
 
   def touch(self, title: str) -> str:
     """
@@ -253,7 +285,6 @@ def main():
         continue
       
       parts = shlex.split(user_input)
-      # 引用符のみの入力など、shlex.splitの結果が空になるケースに対応
       if not parts:
         continue
         
