@@ -1,83 +1,78 @@
 {
-  "_next_id": 21,
+  "_next_id": 16,
   "notes": {
     "1": {
       "id": 1,
-      "title": "x",
-      "uname": "x"
-    },
-    "2": {
-      "id": 2,
       "title": "[[x]]b",
       "uname": "xb"
     },
-    "3": {
-      "id": 3,
+    "2": {
+      "id": 2,
       "title": "[[xb]]c",
       "uname": "xbc"
     },
-    "4": {
-      "id": 4,
+    "3": {
+      "id": 3,
       "title": "[[x]][[x]][[x]]",
       "uname": "xxx"
     },
-    "6": {
-      "id": 6,
+    "4": {
+      "id": 4,
       "title": "[[python]]という言語",
       "uname": "pythonという言語"
     },
-    "7": {
-      "id": 7,
+    "5": {
+      "id": 5,
       "title": "[[go]]lang",
       "uname": "golang"
     },
-    "8": {
-      "id": 8,
+    "6": {
+      "id": 6,
       "title": "[[python]]入門",
       "uname": "python入門"
     },
-    "9": {
-      "id": 9,
+    "7": {
+      "id": 7,
       "title": "[[rust(lang)]] lang",
       "uname": "rust(lang) lang"
     },
-    "10": {
-      "id": 10,
+    "8": {
+      "id": 8,
       "title": "rust(lang)",
       "uname": "rust(lang)"
     },
-    "11": {
-      "id": 11,
+    "9": {
+      "id": 9,
       "title": "A",
       "uname": "A"
     },
-    "12": {
-      "id": 12,
+    "10": {
+      "id": 10,
       "title": "hey",
       "uname": "hey"
     },
-    "13": {
-      "id": 13,
+    "11": {
+      "id": 11,
       "title": "[[hey]]へのリンクを",
       "uname": "heyへのリンクを"
     },
-    "17": {
-      "id": 17,
+    "12": {
+      "id": 12,
       "title": "[[rust(lang)]]の世界",
       "uname": "rust(lang)の世界"
     },
-    "18": {
-      "id": 18,
+    "13": {
+      "id": 13,
       "title": "ゲームの[[rust(game)]]",
       "uname": "ゲームのrust(game)"
     },
-    "19": {
-      "id": 19,
+    "14": {
+      "id": 14,
       "title": "rust(game)",
       "uname": "rust(game)"
     },
-    "20": {
-      "id": 20,
+    "15": {
+      "id": 15,
       "title": "rust",
       "uname": "rust"
     }

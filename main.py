@@ -2,7 +2,7 @@ import re
 import shlex
 import json
 import os
-import unicodedata  # 表示幅の計算に必要
+import unicodedata
 from prompt_toolkit import PromptSession
 from prompt_toolkit.history import InMemoryHistory
 
@@ -12,7 +12,6 @@ def get_display_width(text: str) -> int:
     """
     width = 0
     for char in text:
-        # 'F' (Fullwidth), 'W' (Wide), 'A' (Ambiguous) を全角文字(幅2)として扱う
         if unicodedata.east_asian_width(char) in ('F', 'W', 'A'):
             width += 2
         else:
@@ -59,22 +58,18 @@ class Wiki:
       print(f"エラー: データの読み込みに失敗しました - {e}")
 
   def _is_title_valid(self, title: str) -> bool:
-    """タイトルの形式を検証する。二重リンクを禁止する。"""
     links_content = re.findall(r'\[\[(.+?)\]\]', title)
     return not any('[[' in content or ']]' in content for content in links_content)
 
   def _parse_uname(self, title: str) -> str:
-    """タイトルからunameを生成する。"""
     return re.sub(r'\[\[|\]\]', '', title)
   
   def _calculate_links(self, note_id: int) -> set[str]:
-    """指定されたノートのタイトルからリンク先のunameリストを計算する。"""
     if note_id not in self.notes:
       return set()
     return set(re.findall(r'\[\[(.+?)\]\]', self.notes[note_id]['title']))
 
   def _calculate_backlinks(self, target_uname: str) -> list[int]:
-    """指定されたunameへリンクしているノートのIDリストを計算する。"""
     backlink_ids = []
     link_pattern = f"[[{re.escape(target_uname)}]]"
     for note_id, note in self.notes.items():
@@ -89,18 +84,15 @@ class Wiki:
     
     headers = ["ID", "Unique Name (uname)", "Title"]
     
-    # 各列の最大「表示幅」を計算
     col_widths = [get_display_width(h) for h in headers]
     for note in self.notes.values():
       col_widths[0] = max(col_widths[0], get_display_width(str(note['id'])))
       col_widths[1] = max(col_widths[1], get_display_width(note['uname']))
       col_widths[2] = max(col_widths[2], get_display_width(note['title']))
       
-    # 各行をフォーマットする内部関数
     def format_row(items, widths):
       formatted_items = []
       for item, width in zip(items, widths):
-        # 表示幅を元に、必要な半角スペースの数を計算してパディング
         padding_count = width - get_display_width(item)
         padding = " " * padding_count
         formatted_items.append(item + padding)
@@ -116,12 +108,8 @@ class Wiki:
       
     return "\n".join([header_line, separator] + lines)
 
-
   def touch(self, title: str) -> str:
-    """
-    新しいノートを作成する。
-    タイトル内のリンク先ノートが存在しない場合、それも自動で作成する。
-    """
+    """新しいノートを作成する。リンク先がなければそれも作成する。"""
     if not self._is_title_valid(title):
       return "エラー: タイトルに二重のリンクを含めることはできません。"
     uname = self._parse_uname(title)
@@ -147,10 +135,8 @@ class Wiki:
 
     main_message = f"ノート {new_id} ('{uname}') を作成しました。"
     if created_placeholders:
-      placeholder_message = f"リンク先の未作成ノート {', '.join(created_placeholders)} も同時に作成しました。"
-      return f"{main_message}\n{placeholder_message}"
-    else:
-      return main_message
+      return f"{main_message}\nリンク先の未作成ノート {', '.join(created_placeholders)} も同時に作成しました。"
+    return main_message
 
   def edit(self, note_id: int, new_title: str) -> str:
     """既存のノートを編集し、関連するノートを再帰的に更新する。"""
@@ -190,9 +176,6 @@ class Wiki:
     return f"ノート {note_id} を削除しました。"
 
   def _propagate_change_recursively(self, edited_note_id, old_text, new_text):
-    """
-    Wiki全体でタイトルの置換を行い、unameの変更があれば再帰的に処理を続ける。
-    """
     nodes_to_check = list(self.notes.keys())
     processed_ids = {edited_note_id, }
 
@@ -226,14 +209,10 @@ class Wiki:
             nodes_to_check.insert(0, an_id)
 
   def link(self, note_id: int) -> str:
-    """指定したノートのリンク先一覧を計算して表示する"""
     if note_id not in self.notes: return f"エラー: ID '{note_id}' のノートは存在しません。"
-    
     note = self.notes[note_id]
     linked_unames = self._calculate_links(note_id)
-    
     if not linked_unames: return f"ノート '{note['uname']}' にはリンクがありません。"
-    
     output = [f"ノート '{note['uname']}' からのリンク先:"]
     for uname in sorted(list(linked_unames)):
       if uname in self.uname_to_id:
@@ -244,19 +223,54 @@ class Wiki:
     return "\n".join(output)
 
   def backlink(self, note_id: int) -> str:
-    """指定したノートへのバックリンク一覧を計算して表示する"""
     if note_id not in self.notes: return f"エラー: ID '{note_id}' のノートは存在しません。"
-    
     target_uname = self.notes[note_id]['uname']
     backlink_ids = self._calculate_backlinks(target_uname)
-
     if not backlink_ids: return f"ノート '{target_uname}' へのバックリンクはありません。"
-    
     output = [f"ノート '{target_uname}' へのバックリンク元:"]
     for b_id in sorted(backlink_ids):
       note = self.notes[b_id]
       output.append(f"  ID: {note['id']}, uname: {note['uname']}, title: \"{note['title']}\"")
     return "\n".join(output)
+
+  # 【新しいコマンド】
+  def reassign(self) -> str:
+    """
+    全ノートのIDを1から始まる連番に再割り当てする。
+    """
+    if not self.notes:
+        return "ノートが存在しないため、IDの再割り当ては行われませんでした。"
+
+    # 1. 古いIDでノートをソート
+    sorted_notes = sorted(self.notes.values(), key=lambda note: note['id'])
+    
+    # 2. 新しいデータ領域を準備
+    new_notes = {}
+    new_uname_to_id = {}
+    new_id_counter = 1
+    
+    # 3. IDを再割り当て
+    for note in sorted_notes:
+        uname = note['uname']
+        
+        # ノート内のIDと、キーを新しいIDに更新
+        note['id'] = new_id_counter
+        new_notes[new_id_counter] = note
+        
+        # uname -> ID のマッピングも更新
+        new_uname_to_id[uname] = new_id_counter
+        
+        new_id_counter += 1
+        
+    # 4. データを置換
+    self.notes = new_notes
+    self.uname_to_id = new_uname_to_id
+    self._next_id = new_id_counter
+    
+    # 5. 永続化
+    self._save_data()
+    
+    return f"IDの再割り当てが完了しました。合計 {len(self.notes)} 件のノートが更新されました。"
 
 
 def print_help():
@@ -266,6 +280,7 @@ def print_help():
   touch "<title>"                          : 新しいノートを作成 (空白を含む場合は引用符で囲む)
   edit <id> "<new_title>"                  : ノートを編集 (空白を含む場合は引用符で囲む)
   rm <id>                                  : ノートを削除
+  reassign                                 : IDを1から始まる連番に振り直す
   link <id>                                : ノートのリンク先を表示
   backlink <id>                            : ノートへのバックリンク元を表示
   help                                     : このヘルプを表示
@@ -300,6 +315,12 @@ def main():
           print("エラー: ls コマンドに引数は不要です。")
         else:
           print(wiki.ls())
+      # 【新しいコマンド】
+      elif command == "reassign":
+        if args:
+          print("エラー: reassign コマンドに引数は不要です。")
+        else:
+          print(wiki.reassign())
       elif command == "touch":
         if len(args) != 1:
           print("使用法: touch \"<title>\"")
