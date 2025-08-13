@@ -233,7 +233,6 @@ class Wiki:
       output.append(f"  ID: {note['id']}, uname: {note['uname']}, title: \"{note['title']}\"")
     return "\n".join(output)
 
-  # 【新しいコマンド】
   def reassign(self) -> str:
     """
     全ノートのIDを1から始まる連番に再割り当てする。
@@ -315,7 +314,6 @@ def main():
           print("エラー: ls コマンドに引数は不要です。")
         else:
           print(wiki.ls())
-      # 【新しいコマンド】
       elif command == "reassign":
         if args:
           print("エラー: reassign コマンドに引数は不要です。")
